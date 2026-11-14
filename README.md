@@ -2,7 +2,7 @@
 # 🌕 Moon Base 30: Junior Astronaut Mission Trainer
 
 **NASA Space Apps Challenge 2026** · Challenge: *Build a Junior Astronaut Mission Trainer*
-**Team:** The · **Play:** [[public link: GitHub Pages / itch.io](https://nurbol876.github.io/Moon-Base-30/)
+**Team:** The · **Play:** [https://nurbol876.github.io/Moon-Base-30/](https://nurbol876.github.io/Moon-Base-30/)
 
 > A pixel-art survival game where students run a lunar outpost for 30 days and feel the engineering trade-offs that decide whether a real mission succeeds or fails.
 
