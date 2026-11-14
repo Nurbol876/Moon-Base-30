@@ -107,7 +107,6 @@ assets/     art/, audio/, ui/
 We used AI tools during development and we list them honestly:
 
 - **Claude (Anthropic):** game design ideas, balance prototyping, code drafts, text and presentation drafts.
-- **[Image tools, e.g. Gemini / Adobe Firefly]:** background art and sprites. [add details]
 
 All AI-generated output was reviewed and edited by the team. [adjust to match what you really did]
 
@@ -122,8 +121,9 @@ All AI-generated output was reviewed and edited by the team. [adjust to match wh
 
 | Name | Role |
 |---|---|
-| Nurbol Sagynbekov | [role] |
-| [Teammate] | [role] |
+| Nurbol Sagynbekov | Captain |
+| Turusov Zhalal | Advisor |
+| Turusov Zhalil | Coder |
 
 ## Credits and licenses
 
