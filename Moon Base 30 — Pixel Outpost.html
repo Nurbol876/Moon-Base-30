@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Moon Base 30</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9edf7;--pn:#fff;--tx:#12203a;--mu:#52607d;--ln:#c8d1e6;--ac:#b86a00;--ok:#1f9d55;--bad:#d6402f;--cy:#0b86a0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a0e1f;--pn:#141c33;--tx:#ece8dc;--mu:#97a3c2;--ln:#26314f;--ac:#ffb347;--ok:#7bd88f;--bad:#ff6b5e;--cy:#5ad1e6;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0a0e1f;--pn:#141c33;--tx:#ece8dc;--mu:#97a3c2;--ln:#26314f;--ac:#ffb347;--ok:#7bd88f;--bad:#ff6b5e;--cy:#5ad1e6;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 "Space Grotesk",system-ui,sans-serif}
+#app{max-width:900px;margin:0 auto;padding:14px}
+#bar{display:flex;justify-content:flex-end;gap:8px}
+h1{font-size:clamp(2.2rem,8vw,3.6rem);line-height:1;margin:.3em 0}h2{margin:.3em 0}
+.pn{background:var(--pn);border:2px solid var(--ln);border-radius:8px;padding:12px;margin:10px 0}
+button,input{font:inherit;color:var(--tx);background:var(--pn);border:2px solid var(--ln);border-radius:6px;padding:9px 12px}
+button{cursor:pointer;text-align:left}button:hover:not(:disabled){border-color:var(--ac)}button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--cy);outline-offset:2px}
+.go{background:var(--ac);color:#101010;border-color:var(--ac);font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+small{display:block;color:var(--mu)}
+canvas{width:100%;image-rendering:pixelated;border:2px solid var(--ln);border-radius:6px;display:block;background:#05070f}
+.st{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;font-size:.85rem;color:var(--mu)}
+.st b{color:var(--tx)}.bar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden}.bar i{display:block;height:100%}
+.sel{border-color:var(--ok)!important}.warn{color:var(--bad)}.good{color:var(--ok)}
+.log p{margin:.2em 0}.hero{text-align:center;padding:18px 0}
+.fact{border-left:4px solid var(--cy);padding:4px 10px;color:var(--mu)}
+</style></head><body><div id="app"></div>
+<script>
+let L=/^ru/i.test(navigator.language)?1:0,mute=false,G=null,DK='med',pick=[],AC=null;
+const _=a=>a[L],$=s=>document.querySelector(s),app=$('#app'),cl=(v,a=0,b=100)=>Math.max(a,Math.min(b,v)),rnd=a=>a[Math.floor(Math.random()*a.length)];
+const DF={easy:{n:["Easy","Лёгкий"],o:5,f:4,w:4,st:.1,rad:.6,gen:1.1,s0:100,sup:1.3},med:{n:["Medium","Средний"],o:7,f:5,w:5,st:.2,rad:1,gen:1,s0:90,sup:1},hard:{n:["Hard","Сложный"],o:9,f:7,w:6,st:.35,rad:1.7,gen:.85,s0:65,sup:.6}};
+const RL={doctor:{n:["Doctor","Врач"],c:"#e25b5b",d:["Less radiation damage, better exercise","Меньше урон от радиации, лучше тренировка"]},engineer:{n:["Engineer","Инженер"],c:"#ffb347",d:["Repairs ×2, oxygen +40%","Ремонт ×2, кислород +40%"]},biologist:{n:["Biologist","Биолог"],c:"#7bd88f",d:["Crops give 50% more food","Урожай на 50% больше"]},geologist:{n:["Geologist","Геолог"],c:"#b58cf0",d:["More science and ice finds","Больше науки и льда"]}};
+const RS=[["o2","💨",["Oxygen","Кислород"],"var(--cy)"],["food","🍲",["Food","Еда"],"var(--ok)"],["water","💧",["Water","Вода"],"var(--cy)"],["power","⚡",["Power","Энергия"],"var(--ac)"],["hull","🏠",["Hull","Корпус"],"var(--ok)"],["rad","☢️",["Radiation","Радиация"],"var(--bad)"],["health","❤️",["Health","Здоровье"],"var(--ok)"]];
+const B=(r,m)=>G.crew.includes(r)?m:1;
+const AX=[
+["repair","🔧",["Repair habitat","Ремонт базы"],["hull +15, power −3","корпус +15, энергия −3"],g=>{ch('hull',15*B('engineer',2));ch('power',-3)}],
+["oxygen","💨",["Make oxygen","Добыть кислород"],["O₂ +14 from soil, power −6","O₂ +14 из грунта, энергия −6"],g=>{ch('o2',14*B('engineer',1.4));ch('power',-6)}],
+["water","💧",["Mine ice","Добыть лёд"],["water +12, power −5","вода +12, энергия −5"],g=>{ch('water',12*B('geologist',1.3));ch('power',-5)}],
+["farm","🌱",["Greenhouse","Теплица"],["plant or tend (water −3)","посадить или ухаживать (вода −3)"],g=>{ch('water',-3);g.plots.length<6?g.plots.push(0):g.plots=g.plots.map(a=>a+1)}],
+["shield","🛡️",["Radiation shield","Защита от радиации"],["pile regolith (max 5), power −3","грунт на крышу (макс. 5), энергия −3"],g=>{if(g.shield<5){g.shield++;ch('power',-3);ach('fort',g.shield==5)}}],
+["explore","🔭",["Explore + quiz","Исследовать + квиз"],["EVA: science, radiation, O₂ −4","выход: наука, радиация, O₂ −4"],g=>{g.sci+=Math.round(10*B('geologist',1.5));ch('o2',-4);ch('rad',4*DF[DK].rad*(G.crew.includes('doctor')?.8:1));if(Math.random()<.3*B('geologist',1.5)){ch('water',10);log(_(["Ice found! Water +10","Найден лёд! Вода +10"]))}setTimeout(quiz,300)}],
+["panels","☀️",["Clean panels","Очистить панели"],["restore solar power","вернуть мощность панелей"],g=>{g.eff=1}],
+["train","🏃",["Exercise","Тренировка"],["health +10 (ISS crews: ~2 h/day)","здоровье +10 (экипаж МКС: ~2 ч/день)"],g=>{ch('health',10*B('doctor',1.5));ch('food',-1)}],
+["call","📞",["Call home","Связь с домом"],["health +5, power −2","здоровье +5, энергия −2"],g=>{ch('health',5);ch('power',-2)}]];
+const QZ=[
+[["Why do ISS astronauts exercise about 2 hours a day?","Зачем астронавты МКС тренируются около 2 часов в день?"],[["To keep muscles and bones from weakening","Чтобы мышцы и кости не слабели"],["To warm up the station","Чтобы согреть станцию"],["Just for photos","Только для фото"]]],
+[["How long does daylight last at one spot on the Moon?","Сколько длится день в одной точке Луны?"],[["About 14 Earth days","Около 14 земных суток"],["12 hours","12 часов"],["One year","Один год"]]],
+[["Moon gravity compared to Earth?","Гравитация Луны по сравнению с Землёй?"],[["About one sixth","Около одной шестой"],["About half","Около половины"],["The same","Такая же"]]],
+[["Why is lunar dust a problem?","Чем опасна лунная пыль?"],[["It is sharp and sticks to everything","Она острая и липнет ко всему"],["It is wet","Она мокрая"],["It glows","Она светится"]]],
+[["Where could water ice be on the Moon?","Где на Луне может быть водяной лёд?"],[["In permanently shadowed craters","В вечно тёмных кратерах"],["On the sunny equator","На солнечном экваторе"],["In the sky","В небе"]]],
+[["Why build a radiation shelter?","Зачем нужно радиационное укрытие?"],[["No atmosphere stops flares and cosmic rays","Атмосферы нет, вспышки и лучи не задерживаются"],["To save oxygen","Чтобы сэкономить кислород"],["For style","Для красоты"]]]];
+const AH=[["farm","🌱",["Green Thumb","Зелёный палец"]],["storm","⛈️",["Storm Rider","Укротитель бури"]],["scholar","🎓",["Moon Scholar (3 quiz answers)","Лунный учёный (3 ответа)"]],["fort","🧱",["Fortress (max shield)","Крепость (макс. защита)"]],["night","🌑",["Survived the lunar night","Пережил лунную ночь"]],["win","🏆",["Moon Base 30","Лунная база 30"]],["hardwin","🚀",["Hard mode hero","Герой сложного режима"]]];
+const FT=[["The ISS recycles most of its water, even moisture from the air.","МКС перерабатывает почти всю воду, даже влагу из воздуха."],["Astronauts on the ISS see 16 sunrises a day.","Астронавты на МКС видят 16 рассветов в сутки."],["Astronauts eat tortillas instead of bread: crumbs are dangerous in zero gravity.","Астронавты едят тортильи: крошки в невесомости опасны."],["Artemis aims for the Moon’s south pole, where ice may hide in dark craters.","Artemis нацелена на южный полюс Луны, где во тьме кратеров может быть лёд."],["Veggie on the ISS has grown lettuce, radishes and zinnias.","На МКС в системе Veggie вырастили салат, редис и цинии."]];
+const DB=[["o2",["Oxygen vs power: making O₂ from soil costs electricity that also runs the greenhouse and heaters. Life-support engineers size air and power together.","Кислород против энергии: добыча O₂ из грунта требует электричества, которое нужно и теплице. Инженеры рассчитывают воздух и энергию вместе."]],["food",["Food vs water: crops add fresh food but need water and time. Real crews decide whether a plant is worth its water.","Еда против воды: растения дают свежую еду, но требуют воды и времени. Реальные экипажи решают, стоит ли растение своей воды."]],["water",["Water vs power: melting and cleaning ice takes energy, so every litre has an electricity price.","Вода против энергии: растопить и очистить лёд нужна энергия, у каждого литра есть цена в электричестве."]],["power",["Power vs the lunar night: night lasts about two Earth weeks, so planners need stored power for the dark.","Энергия против лунной ночи: ночь длится около двух недель, нужен запас энергии на темноту."]],["hull",["Repairs vs science: time spent patching is time not exploring. Real crews balance maintenance and research.","Ремонт против науки: время на ремонт — это время не на исследования. Реальные экипажи балансируют то и другое."]],["rad",["Shielding vs mobility: soil on the roof lowers dose, but spacewalks raise it. Planners set dose limits.","Защита против мобильности: грунт на крыше снижает дозу, а выходы наружу её повышают. Планировщики задают лимиты дозы."]],["health",["Crew care vs tasks: exercise and rest cost working time but keep the crew able to work at all.","Забота об экипаже против дел: тренировки и отдых отнимают время, но без них экипаж не сможет работать."]]];
+function pass(){try{return JSON.parse(localStorage.mb30p)||{}}catch(e){return{}}}
+function ach(id,c=true){if(!c||!G||G.got.includes(id))return;G.got.push(id);let p=pass();p[id]=1;try{localStorage.mb30p=JSON.stringify(p)}catch(e){};const a=AH.find(x=>x[0]==id);log('🏅 '+_(a[2]));snd(880,.2)}
+function snd(f,d=.12,t='square'){if(mute)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=t;o.frequency.value=f;g.gain.value=.04;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+const bar=()=>`<div id="bar"><button id="lg">${L?'EN':'RU'}</button><button id="mt">${mute?'🔇':'🔊'}</button></div>`;
+function sh(h){app.innerHTML=bar()+h;$('#lg').onclick=()=>{L=1-L;cur()};$('#mt').onclick=()=>{mute=!mute;cur()}}
+let cur=title;
+function title(){cur=title;G=null;sh(`<div class="hero"><div style="font-size:4rem">🌕</div><h1>Moon Base 30</h1><p>${_(["Run a pixel lunar outpost for 30 days. Oxygen, power, food and radiation: every choice has a price.","Управляй пиксельной лунной базой 30 дней. Кислород, энергия, еда и радиация: у каждого решения есть цена."])}</p></div>
+<h2>${_(["Choose difficulty","Выбери сложность"])}</h2><div class="grid">${Object.entries(DF).map(([k,v])=>`<button data-d="${k}"><b>${_(v.n)}</b><small>${_(k=='easy'?["More supplies, few storms","Много припасов, мало бурь"]:k=='med'?["Balanced mission","Сбалансированная миссия"]:["Many storms, scarce food and air, high radiation","Много бурь, мало еды и воздуха, много радиации"])}</small></button>`).join('')}</div>
+<div class="grid" style="margin-top:10px"><button id="pp">🛂 ${_(["Astronaut passport","Паспорт астронавта"])}</button><button id="lb">🏆 ${_(["Leaderboard","Рекорды"])}</button></div>
+<p class="fact">${_(rnd(FT))}</p>`);
+ app.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{DK=b.dataset.d;pick=[];crewScr()});$('#pp').onclick=passport;$('#lb').onclick=board}
+function crewScr(){cur=crewScr;sh(`<h2>${_(["Choose your crew (2–4)","Выбери экипаж (2–4)"])}</h2><div class="grid">${Object.entries(RL).map(([k,r])=>`<button data-r="${k}" class="${pick.includes(k)?'sel':''}"><b style="color:${r.c}">■</b> <b>${_(r.n)}</b><small>${_(r.d)}</small></button>`).join('')}</div><p class="fact">${_(["More people means more hands but more air, food and water used.","Больше людей — больше рук, но и больше расход воздуха, еды и воды."])}</p><button class="go" id="st" ${pick.length<2?'disabled':''}>${_(["Launch to the Moon 🚀","Лететь на Луну 🚀"])}</button> <button id="bk">←</button>`);
+ app.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{const k=b.dataset.r;pick.includes(k)?pick=pick.filter(x=>x!=k):pick.length<4&&pick.push(k);crewScr()});$('#st').onclick=launch;$('#bk').onclick=title}
+function launch(){const s=[["🧑‍🚀","Suit up and board Orion","Надень скафандр и займи место в «Орионе»"],["🚀","Liftoff! SLS pushes you to orbit","Старт! SLS выводит вас на орбиту"],["🛰️","Burn toward the Moon","Разгон к Луне"],["🌑","Landing on the Moon","Посадка на Луну"]];let i=0;
+ (function n(){if(i>=s.length)return start();sh(`<div class="hero"><div style="font-size:5rem">${s[i][0]}</div><h2>${s[i][L+1]}</h2></div>`);snd(200+i*120,.5,'sawtooth');i++;setTimeout(n,1100)})()}
+function start(){const d=DF[DK];G={crew:[...pick],day:1,ap:0,res:{o2:d.s0,food:d.s0,water:d.s0,power:80,hull:100,rad:0,health:100},shield:0,eff:1,storm:0,plots:[0,0],sci:0,got:[],hist:[],lg:[],qok:0,n:{},t:0,dust:[]};G.ap=G.crew.length+1;cur=game;game()}
+const ch=(k,v)=>{G.res[k]=cl(G.res[k]+v)},log=t=>G.lg.push(t);
+function game(){cur=game;const g=G,night=g.day>=12&&g.day<=18;
+ sh(`<div class="pn"><b>${_(["Day","День"])} ${g.day}/30 ${night?'🌑':'☀️'}${g.storm>0?' ⛈️':''}</b> · ${_(["Actions","Действий"])}: <b>${g.ap}</b> · ${_(DF[DK].n)}</div><canvas id="cv" width="320" height="150"></canvas>
+<div class="pn st">${RS.map(r=>{const v=Math.round(g.res[r[0]]),bad=r[0]=='rad'?v>60:v<25;return`<div>${r[1]} ${_(r[2])} <b class="${bad?'warn':''}">${v}</b><div class="bar"><i style="width:${v}%;background:${r[3]}"></i></div></div>`}).join('')}<div>🔬 <b>${g.sci}</b></div></div>
+<div class="grid">${AX.map((a,i)=>`<button data-a="${i}" ${g.ap<1||(a[0]=='explore'&&g.storm>0)?'disabled':''}>${a[1]} <b>${_(a[2])}</b><small>${_(a[3])}</small></button>`).join('')}</div>
+<button class="go" id="end" style="margin-top:10px">${_(["End day ➜","Завершить день ➜"])}</button><div class="pn log">${g.lg.slice(-5).reverse().map(l=>`<p>${l}</p>`).join('')}</div>`);
+ app.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=AX[b.dataset.a];g.ap--;g.n[a[0]]=(g.n[a[0]]||0)+1;a[4](g);snd(520);if(a[0]!='explore')game();else game()});$('#end').onclick=endDay;g.cvOn=true;if(!g.run){g.run=true;requestAnimationFrame(draw)}}
+function quiz(){if(!G||cur!=game)return;const q=rnd(QZ),o=q[1].map((x,i)=>[x,i]).sort(()=>Math.random()-.5);
+ sh(`<div class="pn"><h2>🔭 ${_(q[0])}</h2><div class="grid">${o.map(x=>`<button data-q="${x[1]}">${_(x[0])}</button>`).join('')}</div></div>`);
+ app.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{const ok=b.dataset.q==0;if(ok){G.sci+=5;G.qok++;log(_(["Correct! Science +5","Верно! Наука +5"]));snd(880);ach('scholar',G.qok>=3)}else{log(_(["Not quite: the right answer was “","Не совсем: правильный ответ — «"])+_(q[1][0])+_(["”","»"]));snd(150,.3)}game()})}
+function endDay(){const g=G,d=DF[DK];let light=(g.day>=12&&g.day<=18)?.25:1;const wasStorm=g.storm>0;if(wasStorm){light*=.4;g.storm--;ach('storm',g.storm==0)}
+ ch('power',30*g.eff*light*d.gen-16);g.eff=Math.max(.4,g.eff-.04);const k=g.crew.length/3;ch('o2',-d.o*k);ch('food',-d.f*k);ch('water',-d.w*k);
+ g.plots=g.plots.map(a=>{a++;if(a>=5){ch('food',10*B('biologist',1.5));log(_(["🥬 Harvest!","🥬 Урожай!"]));ach('farm');return 0}return a});
+ const rf=(1-.12*g.shield)*(g.crew.includes('doctor')?.8:1);ch('rad',1.2*d.rad*rf);
+ if(Math.random()<d.st){g.storm=2;g.eff=Math.max(.4,g.eff-.1);ch('hull',-6);log('<span class="warn">'+_(["⛈️ Lunar dust storm! No spacewalks.","⛈️ Лунная буря! Выходы запрещены."])+'</span>');snd(110,.4,'sawtooth')}
+ if(Math.random()<.12*d.rad){ch('rad',14*d.rad*rf);log('<span class="warn">'+_(["☢️ Solar flare!","☢️ Солнечная вспышка!"])+'</span>');snd(130,.4,'sawtooth')}
+ if(Math.random()<.12){ch('hull',-12);ch('o2',-6);log('<span class="warn">'+_(["☄️ Micrometeorite hit the hull.","☄️ Микрометеорит пробил обшивку."])+'</span>')}
+ if(Math.random()<.1){ch('power',-15);log('<span class="warn">'+_(["⚠️ Equipment fault: power −15.","⚠️ Сбой оборудования: энергия −15."])+'</span>')}
+ if([7,14,21,28].includes(g.day)){ch('food',25*d.sup);ch('o2',25*d.sup);ch('water',20*d.sup);log('<span class="good">'+_(["📦 Cargo ship brought supplies!","📦 Грузовой корабль привёз припасы!"])+'</span>')}
+ if(g.res.power<=0)ch('o2',-5);if(g.res.food<=0||g.res.water<=0||g.res.o2<=0)ch('health',-15);if(g.res.rad>60)ch('health',-3);
+ g.hist.push({...g.res});log('💡 '+_(rnd(FT)));ach('night',g.day>=19);
+ const r=g.res;let why=r.hull<=0?0:r.rad>=100?1:r.health<=0?2:-1;
+ if(why>=0)return fin(false,_([["The hull failed.","Корпус разрушен."],["Radiation dose too high.","Слишком большая доза радиации."],["The crew did not survive.","Экипаж не выжил."]][why]));
+ if(g.day>=30)return fin(true);g.day++;g.ap=g.crew.length+1;game()}
+function fin(win,why){const g=G,r=g.res;g.run=false;if(win){ach('win');ach('hardwin',DK=='hard')}
+ const score=Math.round(g.sci*2+r.health+r.o2+r.food+r.water+(100-r.rad)+(win?200:g.day*5));
+ const w=RS.filter(x=>x[0]!='rad').map(x=>[x[0],r[x[0]]]).concat([['rad',100-r.rad]]).sort((a,b)=>a[1]-b[1])[0][0];
+ const col={o2:'#5ad1e6',food:'#7bd88f',water:'#4f8cff',power:'#ffb347'};
+ const pl=Object.entries(col).map(([k,c])=>`<polyline fill="none" stroke="${c}" stroke-width="2" points="${g.hist.map((h,i)=>`${i*10},${100-h[k]}`).join(' ')}"/>`).join('');
+ sh(`<div class="hero"><div style="font-size:4rem">${win?'🏆':'💥'}</div><h1>${win?_(["You survived 30 days!","Ты выжил 30 дней!"]):_(["Mission ended","Миссия прервана"])+' · '+_(["day","день"])+' '+g.day}</h1><p>${why||''}</p><h2>${_(["Score","Очки"])}: ${score}</h2></div>
+<div class="pn"><h2>📘 ${_(["Debrief: the real trade-off","Разбор: реальный компромисс"])}</h2><p>${_(DB.find(x=>x[0]==w)[1])}</p><svg viewBox="0 0 300 100" style="width:100%;max-height:140px" role="img" aria-label="resources by day">${pl}</svg><small>💨 ${_(["Oxygen","Кислород"])} · 🍲 ${_(["Food","Еда"])} · 💧 ${_(["Water","Вода"])} · ⚡ ${_(["Power","Энергия"])}</small></div>
+<div class="pn"><b>${_(["Achievements this run","Достижения за миссию"])}:</b> ${g.got.map(i=>AH.find(a=>a[0]==i)[1]).join(' ')||'—'}</div>
+<div class="pn"><input id="nm" maxlength="14" placeholder="${_(["Your callsign","Позывной"])}"> <button class="go" id="sv">${_(["Save score","Сохранить"])}</button></div><button id="pp">🛂</button> <button id="lb">🏆</button> <button class="go" id="ag">${_(["Play again","Играть снова"])}</button>`);
+ $('#sv').onclick=()=>{let b=lbd();b.push({n:$('#nm').value||'Astro',s:score,d:DK,c:g.crew.length});b.sort((x,y)=>y.s-x.s);try{localStorage.mb30b=JSON.stringify(b.slice(0,10))}catch(e){};board()};$('#pp').onclick=passport;$('#lb').onclick=board;$('#ag').onclick=title;snd(win?988:110,.6)}
+const lbd=()=>{try{return JSON.parse(localStorage.mb30b)||[]}catch(e){return[]}};
+function board(){cur=board;const b=lbd();sh(`<h2>🏆 ${_(["Leaderboard","Рекорды"])}</h2><div class="pn">${b.map((e,i)=>`<p>${i+1}. <b>${e.n.replace(/[<>&]/g,'')}</b> — ${e.s} · ${_(DF[e.d].n)} · 👥${e.c}</p>`).join('')||_(["No scores yet.","Пока пусто."])}</div><button id="bk">←</button>`);$('#bk').onclick=title}
+function passport(){cur=passport;const p=pass();sh(`<h2>🛂 ${_(["Astronaut passport","Паспорт астронавта"])}</h2><div class="grid">${AH.map(a=>`<div class="pn" style="opacity:${p[a[0]]?1:.4}"><div style="font-size:2rem">${p[a[0]]?a[1]:'🔒'}</div><b>${_(a[2])}</b></div>`).join('')}</div><button id="bk">←</button>`);$('#bk').onclick=title}
+/* ---------- pixel scene ---------- */
+const ST=Array.from({length:40},(_,i)=>[(i*53)%320,(i*29)%95,i%3]);
+function ast(c,x,y,sick){c.fillStyle='#eee';c.fillRect(x,y,6,5);c.fillStyle='#5ad1e6';c.fillRect(x+1,y+1,4,2);c.fillStyle=sick;c.fillRect(x,y+5,6,6);c.fillStyle='#ddd';c.fillRect(x+1,y+11,2,3);c.fillRect(x+3,y+11,2,3)}
+function draw(){const g=G;if(!g||!g.run)return;const cv=$('#cv');if(!cv){return requestAnimationFrame(draw)}const c=cv.getContext('2d'),t=g.t+=1,night=g.day>=12&&g.day<=18;
+ c.fillStyle=night?'#03050c':'#0a0e1f';c.fillRect(0,0,320,150);ST.forEach(s=>{c.fillStyle=(t/20+s[0])%7<.3?'#555':'#cfd6ee';c.fillRect(s[0],s[1],1,1)});
+ c.fillStyle='#2f6fd1';c.beginPath();c.arc(285,28,10,0,7);c.fill();c.fillStyle='#4aa36a';c.fillRect(281,24,5,4);
+ c.fillStyle='#a29e92';c.fillRect(0,100,320,50);c.fillStyle='#8a867b';[[30,120,24],[220,130,30],[150,138,18]].forEach(o=>{c.beginPath();c.ellipse(o[0],o[1],o[2],4,0,0,7);c.fill()});
+ const r=g.res;c.fillStyle='#cfd3dc';c.fillRect(70,74,90,30);c.fillStyle='#8a93a8';c.fillRect(70,100,90,4);
+ for(let i=0;i<4;i++){c.fillStyle=r.power>20?'#ffd75e':'#333';c.fillRect(78+i*20,82,10,8)}
+ c.fillStyle='#7b5a3c';c.fillRect(70,74-g.shield*2,90,g.shield*2);
+ if(r.hull<60){c.fillStyle='#222';c.fillRect(100,76,1,10);c.fillRect(101,86,6,1)}if(r.hull<30){c.fillRect(140,78,1,14);c.fillRect(134,92,7,1)}
+ c.fillStyle='rgba(120,220,150,.5)';c.fillRect(165,84,44,20);c.fillStyle='#7bd88f';g.plots.forEach((a,i)=>{const h=2+a*2;c.fillRect(169+i*7,104-h,4,h)});
+ c.fillStyle='#555';c.fillRect(246,84,2,20);c.fillStyle='#2b5fc7';c.fillRect(226,80,42,5);c.fillStyle='rgba(150,140,110,'+(1-g.eff)+')';c.fillRect(226,80,42,5);
+ g.crew.forEach((k,i)=>{const x=88+((t/3+i*60)%110),sick=r.health<30?2:0;ast(c,x,106+(i%2)*6+sick,RL[k].c)});
+ if(g.storm>0){c.fillStyle='rgba(190,170,130,.5)';for(let i=0;i<40;i++)c.fillRect((i*37+t*5)%320,(i*23+t*2)%150,2,1);c.fillStyle='rgba(120,100,70,.25)';c.fillRect(0,0,320,150)}
+ if(night){c.fillStyle='rgba(0,0,40,.4)';c.fillRect(0,0,320,150)}requestAnimationFrame(draw)}
+title();
+</script></body></html>
